@@ -15,3 +15,15 @@ dev = [
     "ruff>=0.15.5",
     "types-requests>=2.32.4.20260107",
 ]
+
+[tool.mypy]
+strict = true
+mypy_path = "src"
+packages = ["sync_forks"]
+
+[tool.ruff]
+line-length = 99
+exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
