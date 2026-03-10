@@ -1,0 +1,11 @@
+#!/bin/sh
+# Shell wrapper for sync-forks CLI.
+# Resolves symlinks, activates the project venv, and invokes the module.
+set -e
+
+script_path="$(realpath "$0")"
+project_root="$(dirname "$(dirname "$script_path")")"
+
+. "$project_root/.venv/bin/activate"
+
+exec python -m sync_forks "$@"
