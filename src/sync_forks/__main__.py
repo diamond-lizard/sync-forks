@@ -4,4 +4,4 @@ from __future__ import annotations
 
 from sync_forks.main import cli
 
-cli()
+cli(prog_name="sync-forks")
