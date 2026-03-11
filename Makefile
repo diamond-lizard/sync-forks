@@ -19,4 +19,4 @@ mypy:
 	mypy
 
 test: ruff mypy
-	pytest tests/
+	PYTHONPATH=tests pytest tests/

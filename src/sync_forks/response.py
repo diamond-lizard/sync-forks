@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
-import requests
+if TYPE_CHECKING:
+    import requests
 
 from sync_forks.constants import MAX_RESPONSE_SIZE
 
