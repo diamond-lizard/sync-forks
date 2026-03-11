@@ -20,7 +20,8 @@ def parse_owner_repo(repo_url: str) -> tuple[str, str] | None:
     path = parsed.path.strip("/")
     parts = path.split("/")
     if len(parts) != 2 or not parts[0] or not parts[1]:
-        print(f"Warning: invalid repo URL path '{repo_url}': expected owner/repo.", file=sys.stderr)
+        msg = f"Warning: invalid repo URL path '{repo_url}': expected owner/repo."
+        print(msg, file=sys.stderr)
         return None
     owner, repo = parts[0], parts[1]
     if not _validate_name(owner, "owner", repo_url):
