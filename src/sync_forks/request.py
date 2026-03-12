@@ -9,6 +9,8 @@ from urllib.parse import quote
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from sync_forks.retry import RateLimitRetrier
+
 import requests
 
 from sync_forks.constants import API_HOST
@@ -23,7 +25,6 @@ from sync_forks.errors import (
 from sync_forks.ratelimit import detect_rate_limit
 from sync_forks.response import process_response
 from sync_forks.retryable import retry_on_5xx
-from sync_forks.retry import RateLimitRetrier
 
 
 def build_repo_url(owner: str, repo: str) -> str:

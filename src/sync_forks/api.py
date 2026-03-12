@@ -2,7 +2,12 @@
 """GitHub API operations for sync-forks."""
 from __future__ import annotations
 
-import requests
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import requests
+
+    from sync_forks.retry import RateLimitRetrier
 
 from sync_forks.constants import (
     MUTATIVE_REQUEST_DELAY,
@@ -11,7 +16,6 @@ from sync_forks.constants import (
 )
 from sync_forks.errors import report_error
 from sync_forks.request import build_repo_url, execute_api_call
-from sync_forks.retry import RateLimitRetrier
 
 
 def get_default_branch(
