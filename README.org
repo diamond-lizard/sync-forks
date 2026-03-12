@@ -267,6 +267,7 @@ make mypy      # Type check with mypy (strict mode)
     ~sync-forks~ reads a JSON file containing GitHub fork metadata, identifies
     forks that are behind their upstream repositories, and brings them up to date
     using the GitHub merge-upstream API.
+
     Copyright (C) 2026  Sergey Goldgaber
 
     This program is free software: you can redistribute it and/or modify
