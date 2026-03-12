@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Per-host error tracking with threshold-based abort."""
 from __future__ import annotations
+
 import sys
 
 from sync_forks.constants import PER_HOST_ERROR_THRESHOLD
