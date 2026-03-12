@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from sync_forks.api import get_default_branch, merge_upstream
 from sync_forks.errors import HostErrorThresholdExceeded, make_error_tracker
-from sync_forks.output import print_sync_failed, print_synced
+from sync_forks.output import print_sync_failed, print_synced, print_syncing
 from sync_forks.retry import RateLimitExhaustedError, RateLimitRetrier
 from sync_forks.url import parse_owner_repo
 
@@ -77,6 +77,7 @@ def _process_entry(
     if not parsed:
         return
     owner, repo = parsed
+    print_syncing(owner, repo, quiet=quiet)
     try:
         branch = get_default_branch(session, owner, repo, retrier, tracker)
         if branch is None:
