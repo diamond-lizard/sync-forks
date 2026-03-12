@@ -7,12 +7,13 @@ when quiet mode is enabled; errors and abort messages are always shown.
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from sync_forks.url import parse_owner_repo
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from sync_forks.types import ForkEntry, SyncResult
 
 
