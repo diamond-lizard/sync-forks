@@ -1,0 +1,283 @@
+* Overview
+
+~sync-forks~ reads a JSON file containing GitHub fork metadata, identifies
+forks that are behind their upstream repositories, and brings them up to date
+using the GitHub merge-upstream API.
+
+Forks are classified into three categories:
+
+- *Behind only* (syncable): behind upstream with no local commits ahead.
+  These are synced automatically.
+- *Ahead and behind* (skipped): have local commits that diverge from
+  upstream.  These are reported but not synced to avoid overwriting local
+  work.
+- *Not behind* (ignored): already up to date or ahead only.
+
+* Requirements
+
+- Python >= 3.12
+- [[https://github.com/astral-sh/uv][uv]] (for dependency management)
+- [[https://www.passwordstore.org/][pass]] (password manager, for GitHub token retrieval)
+- A GitHub personal access token stored in ~pass~ at
+  ~github.com/fgpat/repos-rw~ with repo read/write permissions
+
+* Installation
+
+#+begin_src shell
+uv pip install -e .
+#+end_src
+
+* Usage
+
+#+begin_src
+sync-forks [OPTIONS] FILENAME
+#+end_src
+
+~FILENAME~ is a JSON file containing fork metadata, or ~-~ to read from
+stdin.
+
+** Options
+
+| Option      | Description                                      |
+|-------------+--------------------------------------------------|
+| ~--dry-run~ | Show what would be done without making any changes. No API calls are made and no token is retrieved. |
+| ~--quiet~   | Suppress informational output.  Errors and abort messages are still printed. |
+| ~--help~    | Show usage information and exit.                 |
+
+** Examples
+
+Dry-run to preview what would be synced:
+
+#+begin_src shell
+bin/sync-forks --dry-run forks.json
+#+end_src
+
+Sync all behind-only forks:
+
+#+begin_src shell
+bin/sync-forks forks.json
+#+end_src
+
+Read from stdin:
+
+#+begin_src shell
+cat forks.json | bin/sync-forks -
+#+end_src
+
+Quiet mode (errors only):
+
+#+begin_src shell
+bin/sync-forks --quiet forks.json
+#+end_src
+
+* Input Format
+
+The input JSON must be an object with a ~"results"~ array.  Each entry with
+~"status": "fork"~ must have ~repo_url~, ~ahead_by~, and ~behind_by~ fields:
+
+#+begin_src json
+{
+  "results": [
+    {
+      "status": "fork",
+      "repo_url": "https://github.com/owner/repo",
+      "ahead_by": 0,
+      "behind_by": 5
+    }
+  ]
+}
+#+end_src
+
+Entries with a status other than ~"fork"~ are ignored.  Fork entries missing
+required fields are reported on stderr and skipped.
+
+* Exit Codes
+
+| Code | Meaning                                                  |
+|------+----------------------------------------------------------|
+|    0 | Success, nothing to do, or partial success               |
+|    1 | Application error (token failure, rate limit exhaustion, host error threshold exceeded, keyboard interrupt) |
+|    2 | Usage error (missing arguments, invalid options)         |
+
+* Error Handling
+
+- *Rate limiting*: Detected via ~x-ratelimit-remaining~ header or
+  ~"secondary rate limit"~ in the response body.  Retries up to 10 times
+  with exponential backoff.  Aborts the run if retries are exhausted.
+- *5xx server errors*: Retried once after a 5-second delay.
+- *Per-host error threshold*: After 5 non-rate-limit errors from a single
+  host, the run is aborted.  HTTP 409 Conflict does not count toward this
+  threshold.
+- *Keyboard interrupt*: Prints a summary of progress so far, prints
+  "Interrupted.", and exits with code 1.  No traceback is shown.
+
+* Development
+
+Run linting, type checking, and tests:
+
+#+begin_src shell
+make test
+#+end_src
+
+Individual targets:
+
+#+begin_src shell
+make ruff      # Lint with ruff
+make ruff-fix  # Auto-fix lint issues
+make mypy      # Type check with mypy (strict mode)
+#+end_src
+
+* License
+
+See project files for license information.
+#+TITLE: sync-forks
+#+AUTHOR: cthulhu
+
+* Overview
+
+~sync-forks~ reads a JSON file containing GitHub fork metadata, identifies
+forks that are behind their upstream repositories, and brings them up to date
+using the GitHub merge-upstream API.
+
+Forks are classified into three categories:
+
+- *Behind only* (syncable): behind upstream with no local commits ahead.
+  These are synced automatically.
+- *Ahead and behind* (skipped): have local commits that diverge from
+  upstream.  These are reported but not synced to avoid overwriting local
+  work.
+- *Not behind* (ignored): already up to date or ahead only.
+
+* Requirements
+
+- Python >= 3.12
+- [[https://github.com/astral-sh/uv][uv]] (for dependency management)
+- [[https://www.passwordstore.org/][pass]] (password manager, for GitHub token retrieval)
+- A GitHub personal access token stored in ~pass~ at
+  ~github.com/fgpat/repos-rw~ with repo read/write permissions
+
+* Installation
+
+#+begin_src shell
+uv pip install -e .
+#+end_src
+
+* Usage
+
+#+begin_src
+sync-forks [OPTIONS] FILENAME
+#+end_src
+
+~FILENAME~ is a JSON file containing fork metadata, or ~-~ to read from
+stdin.
+
+** Options
+
+| Option      | Description                                      |
+|-------------+--------------------------------------------------|
+| ~--dry-run~ | Show what would be done without making any changes. No API calls are made and no token is retrieved. |
+| ~--quiet~   | Suppress informational output.  Errors and abort messages are still printed. |
+| ~--help~    | Show usage information and exit.                 |
+
+** Examples
+
+Dry-run to preview what would be synced:
+
+#+begin_src shell
+bin/sync-forks --dry-run forks.json
+#+end_src
+
+Sync all behind-only forks:
+
+#+begin_src shell
+bin/sync-forks forks.json
+#+end_src
+
+Read from stdin:
+
+#+begin_src shell
+cat forks.json | bin/sync-forks -
+#+end_src
+
+Quiet mode (errors only):
+
+#+begin_src shell
+bin/sync-forks --quiet forks.json
+#+end_src
+
+* Input Format
+
+The input JSON must be an object with a ~"results"~ array.  Each entry with
+~"status": "fork"~ must have ~repo_url~, ~ahead_by~, and ~behind_by~ fields:
+
+#+begin_src json
+{
+  "results": [
+    {
+      "status": "fork",
+      "repo_url": "https://github.com/owner/repo",
+      "ahead_by": 0,
+      "behind_by": 5
+    }
+  ]
+}
+#+end_src
+
+Entries with a status other than ~"fork"~ are ignored.  Fork entries missing
+required fields are reported on stderr and skipped.
+
+* Exit Codes
+
+| Code | Meaning                                                  |
+|------+----------------------------------------------------------|
+|    0 | Success, nothing to do, or partial success               |
+|    1 | Application error (token failure, rate limit exhaustion, host error threshold exceeded, keyboard interrupt) |
+|    2 | Usage error (missing arguments, invalid options)         |
+
+* Error Handling
+
+- *Rate limiting*: Detected via ~x-ratelimit-remaining~ header or
+  ~"secondary rate limit"~ in the response body.  Retries up to 10 times
+  with exponential backoff.  Aborts the run if retries are exhausted.
+- *5xx server errors*: Retried once after a 5-second delay.
+- *Per-host error threshold*: After 5 non-rate-limit errors from a single
+  host, the run is aborted.  HTTP 409 Conflict does not count toward this
+  threshold.
+- *Keyboard interrupt*: Prints a summary of progress so far, prints
+  "Interrupted.", and exits with code 1.  No traceback is shown.
+
+* Development
+
+Run linting, type checking, and tests:
+
+#+begin_src shell
+make test
+#+end_src
+
+Individual targets:
+
+#+begin_src shell
+make ruff      # Lint with ruff
+make ruff-fix  # Auto-fix lint issues
+make mypy      # Type check with mypy (strict mode)
+#+end_src
+
+* License
+
+    ~sync-forks~ reads a JSON file containing GitHub fork metadata, identifies
+    forks that are behind their upstream repositories, and brings them up to date
+    using the GitHub merge-upstream API.
+    Copyright (C) 2026  Sergey Goldgaber
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
