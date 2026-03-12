@@ -11,23 +11,24 @@ if TYPE_CHECKING:
 
     from sync_forks.types import ForkEntry, SyncResult
 
+from sync_forks.api import get_default_branch, merge_upstream
+from sync_forks.errors import HostErrorThresholdExceeded, make_error_tracker
+from sync_forks.output import print_sync_failed, print_synced, print_syncing
+from sync_forks.retry import RateLimitExhaustedError, RateLimitRetrier
+from sync_forks.url import parse_owner_repo
+
 
 class SyncAbortError(Exception):
     """Wraps abort exceptions to carry partial SyncResult."""
 
     partial_result: SyncResult
 
-    def __init__(self, partial_result: SyncResult, cause: Exception) -> None:
+    def __init__(self, partial_result: SyncResult, cause: BaseException) -> None:
         """Store partial result and chain the original cause."""
         super().__init__(str(cause))
         self.partial_result = partial_result
         self.__cause__ = cause
 
-from sync_forks.api import get_default_branch, merge_upstream
-from sync_forks.errors import HostErrorThresholdExceeded, make_error_tracker
-from sync_forks.output import print_sync_failed, print_synced, print_syncing
-from sync_forks.retry import RateLimitExhaustedError, RateLimitRetrier
-from sync_forks.url import parse_owner_repo
 
 
 def _make_empty_result() -> SyncResult:
