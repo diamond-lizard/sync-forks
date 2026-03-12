@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from sync_forks.api import get_default_branch, merge_upstream
 from sync_forks.errors import HostErrorThresholdExceeded, make_error_tracker
-from sync_forks.output import print_sync_failed, print_synced, print_syncing
+from sync_forks.output import print_sync_failed, print_synced
 from sync_forks.retry import RateLimitExhaustedError, RateLimitRetrier
 from sync_forks.url import parse_owner_repo
 
@@ -77,15 +77,18 @@ def _process_entry(
     if not parsed:
         return
     owner, repo = parsed
-    print_syncing(owner, repo, quiet=quiet)
-    branch = get_default_branch(session, owner, repo, retrier, tracker)
-    if branch is None:
+    try:
+        branch = get_default_branch(session, owner, repo, retrier, tracker)
+        if branch is None:
+            result["failed"].append(f"{owner}/{repo}")
+            print_sync_failed(owner, repo, "could not get default branch", quiet=quiet)
+            return
+        if merge_upstream(session, owner, repo, branch, retrier, tracker):
+            result["synced"].append(f"{owner}/{repo}")
+            print_synced(owner, repo, quiet=quiet)
+        else:
+            result["failed"].append(f"{owner}/{repo}")
+            print_sync_failed(owner, repo, "merge-upstream failed", quiet=quiet)
+    except HostErrorThresholdExceeded:
         result["failed"].append(f"{owner}/{repo}")
-        print_sync_failed(owner, repo, "could not get default branch", quiet=quiet)
-        return
-    if merge_upstream(session, owner, repo, branch, retrier, tracker):
-        result["synced"].append(f"{owner}/{repo}")
-        print_synced(owner, repo, quiet=quiet)
-    else:
-        result["failed"].append(f"{owner}/{repo}")
-        print_sync_failed(owner, repo, "merge-upstream failed", quiet=quiet)
+        raise
