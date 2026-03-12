@@ -18,8 +18,12 @@ Forks are classified into three categories:
 - Python >= 3.12
 - [[https://github.com/astral-sh/uv][uv]] (for dependency management)
 - [[https://www.passwordstore.org/][pass]] (password manager, for GitHub token retrieval)
-- A GitHub personal access token stored in ~pass~ at
-  ~github.com/fgpat/repos-rw~ with repo read/write permissions
+- A GitHub fine-grained personal access token (FGPAT) stored in ~pass~ at
+  ~github.com/fgpat/repos-rw~ with the following repository permissions:
+  - *Contents*: Read and write
+  - *Metadata*: Read (automatically selected)
+  - *Workflows*: Read and write (required when upstream repos contain
+    ~.github/workflows/~ files)
 
 * Installation
 
