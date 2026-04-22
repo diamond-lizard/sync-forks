@@ -19,7 +19,7 @@ Forks are classified into three categories:
 - [[https://github.com/astral-sh/uv][uv]] (for dependency management)
 - [[https://www.passwordstore.org/][pass]] (password manager, for GitHub token retrieval)
 - A GitHub fine-grained personal access token (FGPAT) stored in ~pass~ at
-  ~github.com/fgpat/repos-rw~ with the following repository permissions:
+  ~github.com/fgpat/contents-rw-and-workflows-rw~ with the following repository permissions:
   - *Contents*: Read and write
   - *Metadata*: Read (automatically selected)
   - *Workflows*: Read and write (required when upstream repos contain
@@ -122,13 +122,13 @@ required fields are reported on stderr and skipped.
 All repos fail immediately with ~HTTP 401~ and the run aborts after 5
 errors.  This means the GitHub token is invalid.
 
-- The token stored in ~pass~ at ~github.com/fgpat/repos-rw~ may have
+- The token stored in ~pass~ at ~github.com/fgpat/contents-rw-and-workflows-rw~ may have
   expired.  Fine-grained PATs have expiration dates.
 - The token may have been revoked or rotated without updating ~pass~.
 - Verify the token is still valid:
 
 #+begin_src shell
-pass show github.com/fgpat/repos-rw | head -1 | gh auth status --with-token
+pass show github.com/fgpat/contents-rw-and-workflows-rw | head -1 | gh auth status --with-token
 #+end_src
 
 If expired, mint a new token and update it in ~pass~.

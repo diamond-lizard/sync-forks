@@ -21,7 +21,7 @@ def _has_pass() -> bool:
     """Check if pass and key are available."""
     if not shutil.which("pass"):
         return False
-    r = subprocess.run(("pass", "show", "github.com/fgpat/repos-rw"),
+    r = subprocess.run(("pass", "show", "github.com/fgpat/contents-rw-and-workflows-rw"),
         capture_output=True, text=True, timeout=5)
     return r.returncode == 0 and bool(r.stdout.strip())
 

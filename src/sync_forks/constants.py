@@ -10,7 +10,7 @@ PER_HOST_ERROR_THRESHOLD: int = 5
 MAX_RATE_LIMIT_RETRIES: int = 10
 FIVE_XX_RETRY_DELAY: float = 5.0
 PASS_TIMEOUT: int = 30
-PASS_COMMAND: tuple[str, ...] = ("pass", "show", "github.com/fgpat/repos-rw")
+PASS_COMMAND: tuple[str, ...] = ("pass", "show", "github.com/fgpat/contents-rw-and-workflows-rw")
 
 REQUIRED_HEADERS: dict[str, str] = {
     "Accept": "application/vnd.github+json",
