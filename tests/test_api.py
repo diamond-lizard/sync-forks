@@ -95,4 +95,6 @@ def test_merge_upstream_422_reported(capsys: pytest.CaptureFixture[str]) -> None
     session.post.return_value = resp
     r, t = _ctx()
     assert merge_upstream(session, "o", "r", "main", r, t) is False
-    assert "422" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "422" in err
+    assert "Validation Failed" in err

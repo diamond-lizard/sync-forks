@@ -2,6 +2,7 @@
 """Shared request execution with retry, rate limit, and error tracking."""
 from __future__ import annotations
 
+import json
 import time
 from typing import TYPE_CHECKING
 from urllib.parse import quote
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 import requests
 
-from sync_forks.constants import API_HOST
+from sync_forks.constants import API_HOST, MAX_RESPONSE_SIZE
 from sync_forks.errors import (
     classify_http_error,
     classify_network_error,
@@ -32,6 +33,25 @@ def build_repo_url(owner: str, repo: str) -> str:
     return f"https://{API_HOST}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}"
 
 
+def extract_api_message(
+    response: requests.Response,
+    pre_read_body: bytes | None = None,
+) -> str | None:
+    """Extract 'message' from an error response body, or None.
+
+    Returns None for non-JSON, missing field, or oversized bodies.
+    """
+    raw = pre_read_body if pre_read_body is not None else response.content
+    if len(raw) > MAX_RESPONSE_SIZE:
+        return None
+    try:
+        obj = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    msg = obj.get("message") if isinstance(obj, dict) else None
+    return (msg.strip() or None) if isinstance(msg, str) else None
+
+
 def execute_api_call(
     make_request: Callable[[], requests.Response],
     delay: float,
@@ -43,7 +63,6 @@ def execute_api_call(
     """Execute an API call with retry, rate limit, and error tracking.
 
     Returns parsed JSON dict on success, None on failure.
-    Raises RateLimitExhaustedError if rate limit retries exhausted.
     """
     pre_read_body: bytes | None = None
     while True:
@@ -64,11 +83,13 @@ def execute_api_call(
         time.sleep(retrier.handle(response))
     retrier.reset()
     if is_server_error(response.status_code):
-        report_error(classify_http_error(response.status_code, owner, repo))
+        msg = extract_api_message(response, pre_read_body)
+        report_error(classify_http_error(response.status_code, owner, repo, api_message=msg))
         record_error(error_tracker, API_HOST)
         return None
     if not response.ok:
-        report_error(classify_http_error(response.status_code, owner, repo))
+        msg = extract_api_message(response, pre_read_body)
+        report_error(classify_http_error(response.status_code, owner, repo, api_message=msg))
         if is_threshold_countable(response.status_code):
             record_error(error_tracker, API_HOST)
         return None

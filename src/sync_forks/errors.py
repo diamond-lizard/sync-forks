@@ -39,6 +39,7 @@ def record_error(tracker: dict[str, int], host: str) -> None:
 
 def classify_http_error(
     status_code: int, owner: str, repo: str,
+    api_message: str | None = None,
 ) -> str:
     """Return a descriptive error message for an HTTP error status.
 
@@ -50,8 +51,10 @@ def classify_http_error(
     if status_code == 404:
         return f"{repo_id}: 404 Not Found (repo may be private or token lacks access)"
     if status_code == 409:
-        return f"{repo_id}: 409 Conflict"
-    return f"{repo_id}: HTTP {status_code}"
+        base = f"{repo_id}: 409 Conflict"
+        return f"{base}: {api_message}" if api_message else base
+    base = f"{repo_id}: HTTP {status_code}"
+    return f"{base}: {api_message}" if api_message else base
 
 
 def is_threshold_countable(status_code: int) -> bool:
