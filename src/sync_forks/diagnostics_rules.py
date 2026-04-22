@@ -22,8 +22,8 @@ def check_422_workflow(errors: list[SyncError], hints: list[str]) -> None:
     for e in errors:
         if e.status_code == 422 and e.api_message and "workflow" in e.api_message.lower():
             hints.append(
-                "Hint: Some failures need the Workflows"
-                " permission on your token.",
+                "Hint: Token needs Workflows (Read and write)"
+                " permission to sync repos with workflow file changes.",
             )
             return
 
