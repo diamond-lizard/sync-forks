@@ -115,6 +115,60 @@ required fields are reported on stderr and skipped.
 - *Keyboard interrupt*: Prints a summary of progress so far, prints
   "Interrupted.", and exits with code 1.  No traceback is shown.
 
+* Troubleshooting
+
+** HTTP 401 on all repositories
+
+All repos fail immediately with ~HTTP 401~ and the run aborts after 5
+errors.  This means the GitHub token is invalid.
+
+- The token stored in ~pass~ at ~github.com/fgpat/repos-rw~ may have
+  expired.  Fine-grained PATs have expiration dates.
+- The token may have been revoked or rotated without updating ~pass~.
+- Verify the token is still valid:
+
+#+begin_src shell
+pass show github.com/fgpat/repos-rw | head -1 | gh auth status --with-token
+#+end_src
+
+If expired, mint a new token and update it in ~pass~.
+
+** HTTP 422 on some repositories (merge-upstream failed)
+
+Some repos sync successfully while others fail with ~HTTP 422~.  The error
+message from GitHub will appear after the status code, for example:
+
+: o/r: HTTP 422: refusing to allow a Personal Access Token to create or
+: update workflow `.github/workflows/ci.yml` without `workflow` scope
+
+Common causes:
+
+- *Missing Workflows permission*: The upstream commits contain changes to
+  ~.github/workflows/~ files, but the token lacks the *Workflows: Read and
+  write* permission.  Add this permission to the token.
+- *Missing repository access*: The token is configured with "Selected
+  repositories" and some repos are not in the selection.  Add the missing
+  repos to the token's repository access list.
+
+** HTTP 409 Conflict
+
+The fork has diverged from upstream (commits both ahead and behind) in a
+way that cannot be fast-forwarded.  This typically means someone pushed
+commits directly to the fork's default branch.  These errors do not count
+toward the per-host error threshold, so they will not cause an abort.
+
+Resolve by manually merging or rebasing the fork.
+
+** Rate limit exhaustion (aborted after retries)
+
+The run is aborted with a message about rate limit retries being exhausted.
+This happens when too many API calls are made in a short period.
+
+- Wait for the rate limit window to reset (usually 1 hour for
+  authenticated requests).
+- If this happens frequently, consider splitting the input file into
+  smaller batches.
+
 * Development
 
 Run linting, type checking, and tests:
