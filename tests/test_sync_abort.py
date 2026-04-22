@@ -8,8 +8,10 @@ import pytest
 from helpers import make_fork_entry
 
 from sync_forks.errors import HostErrorThresholdExceeded
+from sync_forks.exceptions import SyncAbortError
 from sync_forks.retry import RateLimitExhaustedError
-from sync_forks.sync import SyncAbortError, sync_repos
+from sync_forks.sync import sync_repos
+from sync_forks.sync_error import BranchResult, MergeResult
 
 
 def _noop(_w: int) -> None:
@@ -21,12 +23,12 @@ def _session() -> MagicMock:
     return MagicMock()
 
 
-@patch("sync_forks.sync.merge_upstream", return_value=True)
+@patch("sync_forks.sync.merge_upstream", return_value=MergeResult(ok=True, error=None))
 @patch("sync_forks.sync.get_default_branch")
 def test_host_error_threshold_aborts(mock_branch: MagicMock, mock_merge: MagicMock) -> None:
     """After 5 errors, loop stops and SyncAbortError is raised."""
     mock_branch.side_effect = [
-        "main",
+        BranchResult(branch="main", error=None),
         HostErrorThresholdExceeded("api.github.com", 5),
     ]
     entries = [

@@ -7,8 +7,8 @@ import sys
 
 from helpers import make_sync_result
 
+from sync_forks.exceptions import SyncAbortError
 from sync_forks.main import _print_abort_reason
-from sync_forks.sync import SyncAbortError
 
 
 def _capture_abort_reason(cause: BaseException | None) -> str:

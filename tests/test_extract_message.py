@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from helpers import make_response
 
-from sync_forks.request import extract_api_message
+from sync_forks.sync_error import extract_api_message
 
 
 def test_valid_json_with_message() -> None:

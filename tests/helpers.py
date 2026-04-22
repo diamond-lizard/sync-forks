@@ -31,6 +31,7 @@ def make_fork_entry(url: str, ahead: int, behind: int) -> dict[str, str | int]:
 def make_sync_result(
     synced: list[str] | None = None,
     failed: list[str] | None = None,
-) -> dict[str, list[str]]:
+    errors: list[object] | None = None,
+) -> dict[str, object]:
     """Create a SyncResult dict for testing."""
-    return {"synced": synced or [], "failed": failed or []}
+    return {"synced": synced or [], "failed": failed or [], "errors": errors or []}

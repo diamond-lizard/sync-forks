@@ -2,7 +2,6 @@
 """Shared request execution with retry, rate limit, and error tracking."""
 from __future__ import annotations
 
-import json
 import time
 from typing import TYPE_CHECKING
 from urllib.parse import quote
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 
 import requests
 
-from sync_forks.constants import API_HOST, MAX_RESPONSE_SIZE
+from sync_forks.constants import API_HOST
 from sync_forks.errors import (
     classify_http_error,
     classify_network_error,
@@ -26,30 +25,18 @@ from sync_forks.errors import (
 from sync_forks.ratelimit import detect_rate_limit
 from sync_forks.response import process_response
 from sync_forks.retryable import retry_on_5xx
+from sync_forks.sync_error import (
+    ApiResult,
+    extract_api_message,
+    http_error,
+    network_error,
+    parse_error,
+)
 
 
 def build_repo_url(owner: str, repo: str) -> str:
     """Build the API URL for a repo, URL-encoding path parameters."""
     return f"https://{API_HOST}/repos/{quote(owner, safe='')}/{quote(repo, safe='')}"
-
-
-def extract_api_message(
-    response: requests.Response,
-    pre_read_body: bytes | None = None,
-) -> str | None:
-    """Extract 'message' from an error response body, or None.
-
-    Returns None for non-JSON, missing field, or oversized bodies.
-    """
-    raw = pre_read_body if pre_read_body is not None else response.content
-    if len(raw) > MAX_RESPONSE_SIZE:
-        return None
-    try:
-        obj = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
-        return None
-    msg = obj.get("message") if isinstance(obj, dict) else None
-    return (msg.strip() or None) if isinstance(msg, str) else None
 
 
 def execute_api_call(
@@ -59,11 +46,13 @@ def execute_api_call(
     error_tracker: dict[str, int],
     owner: str,
     repo: str,
-) -> dict[str, object] | None:
+    operation: str,
+) -> ApiResult:
     """Execute an API call with retry, rate limit, and error tracking.
 
-    Returns parsed JSON dict on success, None on failure.
+    Returns ApiResult with parsed data on success, or structured error on failure.
     """
+    repo_id = f"{owner}/{repo}"
     pre_read_body: bytes | None = None
     while True:
         try:
@@ -71,9 +60,14 @@ def execute_api_call(
         except requests.RequestException as exc:
             report_error(classify_network_error(exc, owner, repo))
             record_error(error_tracker, API_HOST)
-            return None
+            return ApiResult(None, network_error(repo_id, operation, exc))
         time.sleep(delay)
-        response = retry_on_5xx(response, make_request)
+        try:
+            response = retry_on_5xx(response, make_request)
+        except requests.RequestException as exc:
+            report_error(classify_network_error(exc, owner, repo))
+            record_error(error_tracker, API_HOST)
+            return ApiResult(None, network_error(repo_id, operation, exc))
         if response.status_code not in (403, 429):
             break
         verdict = detect_rate_limit(response)
@@ -86,15 +80,15 @@ def execute_api_call(
         msg = extract_api_message(response, pre_read_body)
         report_error(classify_http_error(response.status_code, owner, repo, api_message=msg))
         record_error(error_tracker, API_HOST)
-        return None
+        return ApiResult(None, http_error(repo_id, operation, response.status_code, msg))
     if not response.ok:
         msg = extract_api_message(response, pre_read_body)
         report_error(classify_http_error(response.status_code, owner, repo, api_message=msg))
         if is_threshold_countable(response.status_code):
             record_error(error_tracker, API_HOST)
-        return None
+        return ApiResult(None, http_error(repo_id, operation, response.status_code, msg))
     result = process_response(response, pre_read_body)
     if isinstance(result, str):
         report_error(f"{owner}/{repo}: {result}")
-        return None
-    return result
+        return ApiResult(None, parse_error(repo_id, operation, result))
+    return ApiResult(result, None)

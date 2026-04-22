@@ -16,6 +16,7 @@ from sync_forks.constants import (
 )
 from sync_forks.errors import report_error
 from sync_forks.request import build_repo_url, execute_api_call
+from sync_forks.sync_error import BranchResult, MergeResult, missing_field_error
 
 
 def get_default_branch(
@@ -24,26 +25,28 @@ def get_default_branch(
     repo: str,
     retrier: RateLimitRetrier,
     error_tracker: dict[str, int],
-) -> str | None:
+) -> BranchResult:
     """Fetch the default branch name for a repository.
 
-    Returns the branch name on success, or None if the repo should
-    be skipped (error reported on stderr).
+    Returns BranchResult with the branch name on success,
+    or a structured error if the request failed.
     """
     url = build_repo_url(owner, repo)
     def make_request() -> requests.Response:
         return session.get(url, timeout=REQUEST_TIMEOUT)
-    result = execute_api_call(
+    api_result = execute_api_call(
         make_request, NON_MUTATIVE_REQUEST_DELAY,
-        retrier, error_tracker, owner, repo,
+        retrier, error_tracker, owner, repo, "get_default_branch",
     )
-    if result is None:
-        return None
-    branch = result.get("default_branch")
+    if api_result.data is None:
+        return BranchResult(None, api_result.error)
+    branch = api_result.data.get("default_branch")
     if not isinstance(branch, str):
-        report_error(f"{owner}/{repo}: missing default_branch in response")
-        return None
-    return branch
+        repo_id = f"{owner}/{repo}"
+        report_error(f"{repo_id}: missing default_branch in response")
+        err = missing_field_error(repo_id, "get_default_branch", "default_branch")
+        return BranchResult(None, err)
+    return BranchResult(branch, None)
 
 
 def merge_upstream(
@@ -53,16 +56,18 @@ def merge_upstream(
     branch: str,
     retrier: RateLimitRetrier,
     error_tracker: dict[str, int],
-) -> bool:
+) -> MergeResult:
     """Sync a fork's branch with its upstream via merge-upstream API.
 
-    Returns True on success, False on failure (error reported on stderr).
+    Returns MergeResult with success flag and optional structured error.
     """
     url = build_repo_url(owner, repo) + "/merge-upstream"
     def make_request() -> requests.Response:
         return session.post(url, json={"branch": branch}, timeout=REQUEST_TIMEOUT)
-    result = execute_api_call(
+    api_result = execute_api_call(
         make_request, MUTATIVE_REQUEST_DELAY,
-        retrier, error_tracker, owner, repo,
+        retrier, error_tracker, owner, repo, "merge_upstream",
     )
-    return result is not None
+    if api_result.data is None:
+        return MergeResult(False, api_result.error)
+    return MergeResult(True, None)

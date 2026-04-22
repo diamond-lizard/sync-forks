@@ -2,7 +2,10 @@
 """TypedDict definitions for structured data used across sync-forks."""
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    from sync_forks.sync_error import SyncError
 
 
 class ForkEntry(TypedDict):
@@ -25,3 +28,4 @@ class SyncResult(TypedDict):
 
     synced: list[str]
     failed: list[str]
+    errors: list[SyncError]
